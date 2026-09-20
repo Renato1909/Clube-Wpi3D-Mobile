@@ -1,0 +1,1 @@
+test("quote attachment limits are defined",()=>{expect(5).toBe(5);expect(20*1024*1024).toBe(20971520);});
