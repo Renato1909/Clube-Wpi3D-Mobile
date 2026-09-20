@@ -1,0 +1,3 @@
+{
+  "expo":{"name":"Clube WPI3D","slug":"clube-wpi3d","version":"0.1.0","scheme":"clubewpi3d","orientation":"portrait","userInterfaceStyle":"automatic","plugins":["expo-router","expo-secure-store","expo-document-picker"],"ios":{"supportsTablet":true,"bundleIdentifier":"br.com.clubewpi3d.mobile"},"android":{"package":"br.com.clubewpi3d.mobile"}}
+}
