@@ -4,7 +4,12 @@ jest.mock("expo-notifications", () => ({
   getExpoPushTokenAsync: jest.fn().mockResolvedValue({ data: "ExponentPushToken[test]" }),
 }));
 
-import { getExpoPushToken, platformName } from "../lib/push";
+const upsert = jest.fn().mockResolvedValue({ error: null });
+jest.mock("../lib/supabase", () => ({
+  supabase: { from: jest.fn(() => ({ upsert })) },
+}));
+
+import { getExpoPushToken, platformName, registerPushToken } from "../lib/push";
 
 describe("push helpers", () => {
   test("returns an Expo push token after permission is granted", async () => {
@@ -13,5 +18,13 @@ describe("push helpers", () => {
 
   test("reports the native platform", () => {
     expect(["android", "ios"]).toContain(platformName());
+  });
+
+  test("persists the token for the authenticated user", async () => {
+    await expect(registerPushToken("user-123", "project-id")).resolves.toBe("ExponentPushToken[test]");
+    expect(upsert).toHaveBeenCalledWith(
+      { user_id: "user-123", token: "ExponentPushToken[test]", platform: expect.any(String) },
+      { onConflict: "user_id,token" },
+    );
   });
 });
