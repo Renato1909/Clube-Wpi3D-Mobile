@@ -61,6 +61,8 @@ export default function QuoteDetails() {
       return;
     }
 
+    const currentUser = user;
+
     if (quoteId === null) {
       setQuote(null);
       setFiles([]);
@@ -77,7 +79,7 @@ export default function QuoteDetails() {
         .from("quotes")
         .select("id,description,status,created_at")
         .eq("id", quoteId)
-        .eq("user_id", user.id)
+        .eq("user_id", currentUser.id)
         .maybeSingle();
 
       if (quoteError) {
@@ -102,7 +104,7 @@ export default function QuoteDetails() {
         .from("quote_files")
         .select("id,file_name,file_path")
         .eq("quote_id", quoteId)
-        .eq("user_id", user.id)
+        .eq("user_id", currentUser.id)
         .order("id");
 
       if (!active) return;
