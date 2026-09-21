@@ -6,8 +6,23 @@
     "scheme": "clubewpi3d",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router", "expo-secure-store", "expo-document-picker", "expo-notifications"],
-    "ios": {"supportsTablet": true, "bundleIdentifier": "br.com.clubewpi3d.mobile"},
-    "android": {"package": "br.com.clubewpi3d.mobile"}
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-document-picker",
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "default"
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.clubewpi3d.mobile"
+    },
+    "android": {
+      "package": "br.com.clubewpi3d.mobile"
+    }
   }
 }
