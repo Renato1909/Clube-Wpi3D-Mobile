@@ -31,8 +31,10 @@ type Quote = {
 
 type QuoteFile = {
   id: number;
-  file_name: string;
-  file_path: string;
+  original_name: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number;
   signed_url: string | null;
 };
 
@@ -102,7 +104,7 @@ export default function QuoteDetails() {
 
       const { data: fileData, error: filesError } = await supabase
         .from("quote_files")
-        .select("id,file_name,file_path")
+        .select("id,original_name,storage_path,mime_type,size_bytes")
         .eq("quote_id", quoteId)
         .eq("user_id", currentUser.id)
         .order("id");
@@ -121,7 +123,7 @@ export default function QuoteDetails() {
           async (file) => {
             const { data } = await supabase.storage
               .from("quote-files")
-              .createSignedUrl(file.file_path, 900);
+              .createSignedUrl(file.storage_path, 900);
 
             return {
               ...file,
@@ -206,7 +208,12 @@ export default function QuoteDetails() {
       ) : (
         files.map((file) => (
           <View key={file.id} style={s.file}>
-            <Text style={s.fileName}>{file.file_name}</Text>
+            <Text style={s.fileName}>{file.original_name}</Text>
+            <Text style={s.fileMeta}>
+              {(file.size_bytes / 1024 / 1024).toLocaleString("pt-BR", {
+                maximumFractionDigits: 2,
+              })} MB
+            </Text>
             <Pressable
               style={s.secondary}
               onPress={() => openFile(file)}
@@ -248,6 +255,7 @@ const s = StyleSheet.create({
     gap: 10,
   },
   fileName: { fontWeight: "600" },
+  fileMeta: { fontSize: 12, color: "#666" },
   secondary: {
     backgroundColor: "#f0f2f5",
     padding: 12,

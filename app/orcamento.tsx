@@ -12,6 +12,10 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { supabase } from "../lib/supabase";
 import { buildQuoteDescription } from "../lib/quote-description";
+import {
+  buildQuoteFilePath,
+  rollbackQuoteSubmission,
+} from "../lib/quote-submission";
 
 const MAX_FILES = 5;
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -69,14 +73,50 @@ export default function Orcamento() {
 
     setSending(true);
 
+    let quoteId: number | null = null;
+    const uploadedPaths: string[] = [];
+
     try {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name,phone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      const fullName = String(profile?.full_name ?? "").trim();
+      const email = String(user.email ?? "").trim();
+      const phone = String(profile?.phone ?? "").trim();
+
+      if (fullName.length < 2 || fullName.length > 120 || !phone) {
+        throw new Error("profile_incomplete");
+      }
+
+      if (phone.length < 10 || phone.length > 25) {
+        throw new Error("profile_phone_invalid");
+      }
+
+      if (!email || email.length > 254) {
+        throw new Error("account_email_invalid");
+      }
+
       const quoteDescription = buildQuoteDescription(description, items);
+      const quantity = Math.max(
+        1,
+        items.reduce((total, item) => total + item.quantity, 0),
+      );
 
       const { data, error } = await supabase
         .from("quotes")
         .insert({
           user_id: user.id,
+          customer_name: fullName,
+          customer_email: email,
+          customer_phone: phone,
           description: quoteDescription,
+          quantity,
+          material: "recomendacao",
           status: "recebido",
         })
         .select("id")
@@ -84,18 +124,25 @@ export default function Orcamento() {
 
       if (error) throw error;
 
-      for (const file of files) {
-        if (!file.uri || !file.name) continue;
+      quoteId = data.id;
 
-        const path =
-          user.id +
-          "/" +
-          data.id +
-          "/" +
-          file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      for (const [index, file] of files.entries()) {
+        if (!file.uri || !file.name) {
+          throw new Error("Arquivo selecionado sem URI ou nome.");
+        }
+
+        const path = buildQuoteFilePath(user.id, data.id, file.name, index);
 
         const response = await fetch(file.uri);
+        if (!response.ok) {
+          throw new Error(`Falha ao ler o arquivo local: ${file.name}`);
+        }
+
         const body = await response.arrayBuffer();
+
+        if (body.byteLength === 0 || body.byteLength > MAX_BYTES) {
+          throw new Error(`Arquivo fora do limite: ${file.name}`);
+        }
 
         const upload = await supabase.storage
           .from("quote-files")
@@ -106,10 +153,15 @@ export default function Orcamento() {
 
         if (upload.error) throw upload.error;
 
+        uploadedPaths.push(path);
+
         const saved = await supabase.from("quote_files").insert({
           quote_id: data.id,
-          file_path: path,
-          file_name: file.name,
+          user_id: user.id,
+          storage_path: path,
+          original_name: file.name,
+          mime_type: file.mimeType ?? null,
+          size_bytes: body.byteLength,
         });
 
         if (saved.error) throw saved.error;
@@ -119,11 +171,53 @@ export default function Orcamento() {
       setDescription("");
       setFiles([]);
       clear();
-    } catch {
-      Alert.alert(
-        "Erro",
-        "Não foi possível enviar o orçamento. Tente novamente.",
-      );
+    } catch (error) {
+      if (error instanceof Error && error.message === "profile_incomplete") {
+        Alert.alert(
+          "Perfil incompleto",
+          "Preencha seu nome e telefone em Minha conta antes de solicitar um orçamento.",
+        );
+      } else if (
+        error instanceof Error &&
+        error.message === "profile_phone_invalid"
+      ) {
+        Alert.alert(
+          "Telefone inválido",
+          "Atualize seu telefone em Minha conta antes de enviar o orçamento.",
+        );
+      } else if (
+        error instanceof Error &&
+        error.message === "account_email_invalid"
+      ) {
+        Alert.alert(
+          "E-mail inválido",
+          "Sua conta precisa ter um e-mail válido para solicitar um orçamento.",
+        );
+      } else if (quoteId !== null) {
+        const rollback = await rollbackQuoteSubmission(
+          supabase,
+          user.id,
+          quoteId,
+          uploadedPaths,
+        );
+
+        if (!rollback.ok) {
+          Alert.alert(
+            "Erro no envio",
+            "Não foi possível concluir o orçamento e a limpeza automática também falhou. Verifique sua conta antes de tentar novamente.",
+          );
+        } else {
+          Alert.alert(
+            "Erro no envio",
+            "Não foi possível enviar o orçamento. Nenhuma solicitação incompleta foi mantida.",
+          );
+        }
+      } else {
+        Alert.alert(
+          "Erro",
+          "Não foi possível enviar o orçamento. Tente novamente.",
+        );
+      }
     } finally {
       setSending(false);
     }
