@@ -6,9 +6,16 @@ export function buildQuoteFilePath(
   userId: string,
   quoteId: number,
   fileName: string,
+  index = 0,
 ) {
-  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${userId}/${quoteId}/${safeName}`;
+  const safeName =
+    fileName
+      .normalize("NFKD")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .slice(-180) || "arquivo";
+
+  const prefix = index > 0 ? `${index}-` : "";
+  return `${userId}/${quoteId}/${prefix}${safeName}`;
 }
 
 export async function rollbackQuoteSubmission(
