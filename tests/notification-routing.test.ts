@@ -1,6 +1,16 @@
-import { getNotificationRoute } from "../lib/notification-routing";
+import {
+  canHandleNotification,
+  getNotificationRoute,
+} from "../lib/notification-routing";
 
 describe("notification routing", () => {
+  test("waits for auth restoration before handling a notification", () => {
+    expect(canHandleNotification(true, "user-123")).toBe(false);
+    expect(canHandleNotification(false, undefined)).toBe(false);
+    expect(canHandleNotification(false, null)).toBe(false);
+    expect(canHandleNotification(false, "user-123")).toBe(true);
+  });
+
   test("opens the account screen for quote status notifications", () => {
     expect(
       getNotificationRoute({ quoteId: 42, status: "aprovado" }),
