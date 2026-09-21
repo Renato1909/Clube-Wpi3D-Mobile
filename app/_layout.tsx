@@ -38,7 +38,9 @@ function NotificationObserver() {
     let mounted = true;
 
     void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (mounted && response) redirect(response);
+      if (!mounted || !response) return;
+      redirect(response);
+      void Notifications.clearLastNotificationResponseAsync();
     });
 
     const subscription =
