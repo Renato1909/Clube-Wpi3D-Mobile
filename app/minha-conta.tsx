@@ -195,4 +195,5 @@ const s = StyleSheet.create({
   link: { padding: 14, alignItems: "center" },
   danger: { padding: 14, alignItems: "center" },
   dangerText: { color: "#b00020", fontWeight: "700" },
+  details: { marginTop: 10, padding: 10, alignItems: "center", backgroundColor: "#f0f2f5", borderRadius: 9 },
 });
