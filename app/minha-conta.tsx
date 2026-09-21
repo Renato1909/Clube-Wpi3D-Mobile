@@ -144,6 +144,17 @@ export default function MinhaConta() {
             <Text style={s.date}>
               {new Date(quote.created_at).toLocaleDateString("pt-BR")}
             </Text>
+            <Pressable
+              style={s.details}
+              onPress={() =>
+                router.push({
+                  pathname: "/orcamentos/[id]",
+                  params: { id: String(quote.id) },
+                })
+              }
+            >
+              <Text>Ver detalhes</Text>
+            </Pressable>
           </View>
         ))
       )}
