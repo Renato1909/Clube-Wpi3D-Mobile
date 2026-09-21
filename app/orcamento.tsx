@@ -12,6 +12,10 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { supabase } from "../lib/supabase";
 import { buildQuoteDescription } from "../lib/quote-description";
+import {
+  buildQuoteFilePath,
+  rollbackQuoteSubmission,
+} from "../lib/quote-submission";
 
 const MAX_FILES = 5;
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -69,6 +73,9 @@ export default function Orcamento() {
 
     setSending(true);
 
+    let quoteId: number | null = null;
+    const uploadedPaths: string[] = [];
+
     try {
       const quoteDescription = buildQuoteDescription(description, items);
 
@@ -84,17 +91,20 @@ export default function Orcamento() {
 
       if (error) throw error;
 
-      for (const file of files) {
-        if (!file.uri || !file.name) continue;
+      quoteId = data.id;
 
-        const path =
-          user.id +
-          "/" +
-          data.id +
-          "/" +
-          file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      for (const file of files) {
+        if (!file.uri || !file.name) {
+          throw new Error("Arquivo selecionado sem URI ou nome.");
+        }
+
+        const path = buildQuoteFilePath(user.id, data.id, file.name);
 
         const response = await fetch(file.uri);
+        if (!response.ok) {
+          throw new Error(`Falha ao ler o arquivo local: ${file.name}`);
+        }
+
         const body = await response.arrayBuffer();
 
         const upload = await supabase.storage
@@ -106,10 +116,13 @@ export default function Orcamento() {
 
         if (upload.error) throw upload.error;
 
+        uploadedPaths.push(path);
+
         const saved = await supabase.from("quote_files").insert({
           quote_id: data.id,
           file_path: path,
           file_name: file.name,
+          user_id: user.id,
         });
 
         if (saved.error) throw saved.error;
@@ -120,10 +133,31 @@ export default function Orcamento() {
       setFiles([]);
       clear();
     } catch {
-      Alert.alert(
-        "Erro",
-        "Não foi possível enviar o orçamento. Tente novamente.",
-      );
+      if (quoteId !== null) {
+        const rollback = await rollbackQuoteSubmission(
+          supabase,
+          user.id,
+          quoteId,
+          uploadedPaths,
+        );
+
+        if (!rollback.ok) {
+          Alert.alert(
+            "Erro no envio",
+            "Não foi possível concluir o orçamento e a limpeza automática também falhou. Verifique sua conta antes de tentar novamente.",
+          );
+        } else {
+          Alert.alert(
+            "Erro no envio",
+            "Não foi possível enviar o orçamento. Nenhuma solicitação incompleta foi mantida.",
+          );
+        }
+      } else {
+        Alert.alert(
+          "Erro",
+          "Não foi possível enviar o orçamento. Tente novamente.",
+        );
+      }
     } finally {
       setSending(false);
     }
