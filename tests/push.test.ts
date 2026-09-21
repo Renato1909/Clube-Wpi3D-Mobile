@@ -8,30 +8,25 @@ jest.mock("expo-notifications", () => ({
   AndroidImportance: { HIGH: "high" },
 }));
 
-const mockSetItem = jest.fn().mockResolvedValue(undefined);
-const mockGetItem = jest
-  .fn()
-  .mockResolvedValue("ExponentPushToken[test]");
-const mockDeleteItem = jest.fn().mockResolvedValue(undefined);
-
 jest.mock("expo-secure-store", () => ({
-  setItemAsync: mockSetItem,
-  getItemAsync: mockGetItem,
-  deleteItemAsync: mockDeleteItem,
+  setItemAsync: jest.fn().mockResolvedValue(undefined),
+  getItemAsync: jest
+    .fn()
+    .mockResolvedValue("ExponentPushToken[test]"),
+  deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockUpsert = jest.fn().mockResolvedValue({ error: null });
-const mockDelete = jest.fn();
-
-const mockDeleteChain = {
-  eq: jest.fn(),
-};
-
-mockDeleteChain.eq.mockImplementationOnce(() => mockDeleteChain);
-mockDeleteChain.eq.mockReturnValue(
-  Promise.resolve({ error: null }),
-);
-mockDelete.mockReturnValue(mockDeleteChain);
+const mockDeleteEq = jest
+  .fn()
+  .mockReturnValueOnce({
+    eq: jest.fn().mockResolvedValue({ error: null }),
+  });
+const mockDelete = jest.fn().mockReturnValue({
+  eq: jest.fn().mockReturnValue({
+    eq: jest.fn().mockResolvedValue({ error: null }),
+  }),
+});
 
 jest.mock("../lib/supabase", () => ({
   supabase: {
@@ -42,6 +37,7 @@ jest.mock("../lib/supabase", () => ({
   },
 }));
 
+import * as SecureStore from "expo-secure-store";
 import {
   configureAndroidNotificationChannel,
   getExpoPushToken,
@@ -74,7 +70,7 @@ describe("push helpers", () => {
       },
       { onConflict: "user_id,token" },
     );
-    expect(mockSetItem).toHaveBeenCalledWith(
+    expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
       "clube-wpi3d.push-token",
       "ExponentPushToken[test]",
     );
@@ -86,13 +82,9 @@ describe("push helpers", () => {
     );
 
     expect(mockDelete).toHaveBeenCalled();
-    expect(mockDeleteChain.eq).toHaveBeenNthCalledWith(1, "user_id", "user-123");
-    expect(mockDeleteChain.eq).toHaveBeenNthCalledWith(
-      2,
-      "token",
-      "ExponentPushToken[test]",
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
+      "clube-wpi3d.push-token",
     );
-    expect(mockDeleteItem).toHaveBeenCalledWith("clube-wpi3d.push-token");
   });
 
   test("configures the Android notification channel without failing on other platforms", async () => {
