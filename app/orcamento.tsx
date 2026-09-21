@@ -16,6 +16,7 @@ import {
   buildQuoteFilePath,
   rollbackQuoteSubmission,
 } from "../lib/quote-submission";
+import { validateQuoteDescription } from "../lib/quote-validation";
 
 const MAX_FILES = 5;
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -66,8 +67,9 @@ export default function Orcamento() {
       return;
     }
 
-    if (!description.trim()) {
-      Alert.alert("Descrição", "Informe o que você deseja produzir.");
+    const descriptionError = validateQuoteDescription(description);
+    if (descriptionError) {
+      Alert.alert("Descrição", descriptionError);
       return;
     }
 
@@ -118,6 +120,7 @@ export default function Orcamento() {
           quantity,
           material: "recomendacao",
           status: "recebido",
+          submission_complete: files.length === 0,
         })
         .select("id")
         .single();
@@ -167,6 +170,16 @@ export default function Orcamento() {
         if (saved.error) throw saved.error;
       }
 
+      if (files.length > 0) {
+        const { error: completionError } = await supabase
+          .from("quotes")
+          .update({ submission_complete: true })
+          .eq("id", data.id)
+          .eq("user_id", user.id);
+
+        if (completionError) throw completionError;
+      }
+
       Alert.alert("Orçamento enviado", "Sua solicitação foi registrada.");
       setDescription("");
       setFiles([]);
@@ -194,6 +207,21 @@ export default function Orcamento() {
           "Sua conta precisa ter um e-mail válido para solicitar um orçamento.",
         );
       } else if (quoteId !== null) {
+        const { data: persistedQuote } = await supabase
+          .from("quotes")
+          .select("submission_complete")
+          .eq("id", quoteId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (persistedQuote?.submission_complete === true) {
+          Alert.alert(
+            "Orçamento registrado",
+            "O orçamento e os arquivos foram enviados. Não foi possível confirmar a resposta final do servidor; não é necessário reenviar.",
+          );
+          return;
+        }
+
         const rollback = await rollbackQuoteSubmission(
           supabase,
           user.id,
@@ -240,6 +268,7 @@ export default function Orcamento() {
 
       <TextInput
         multiline
+        maxLength={5000}
         value={description}
         onChangeText={setDescription}
         placeholder="Descreva sua peça, medidas e referências"
