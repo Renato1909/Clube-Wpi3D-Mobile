@@ -3,7 +3,7 @@ import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { CartProvider } from "../context/CartContext";
-import { getNotificationRoute } from "../lib/notification-routing";
+import { canHandleNotification, getNotificationRoute } from "../lib/notification-routing";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -18,7 +18,7 @@ function NotificationObserver() {
   const { loading, user } = useAuth();
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (!canHandleNotification(loading, user?.id)) return;
 
     const handledNotificationIds = new Set<string>();
 
