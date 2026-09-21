@@ -73,6 +73,7 @@ export default function Layout() {
           <Stack.Screen name="loja/[slug]" options={{ title: "Produto" }} />
           <Stack.Screen name="carrinho" options={{ title: "Carrinho" }} />
           <Stack.Screen name="minha-conta" options={{ title: "Minha conta" }} />
+          <Stack.Screen name="orcamentos/[id]" options={{ title: "Detalhe do orçamento" }} />
           <Stack.Screen name="orcamento" options={{ title: "Orçamento" }} />
         </Stack>
       </CartProvider>
