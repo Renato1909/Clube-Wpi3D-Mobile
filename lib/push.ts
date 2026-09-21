@@ -1,7 +1,10 @@
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
+import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { supabase } from "./supabase";
+
+const PUSH_TOKEN_STORAGE_KEY = "clube-wpi3d.push-token";
 
 export async function configureAndroidNotificationChannel() {
   if (Platform.OS !== "android") return;
@@ -62,5 +65,24 @@ export async function registerPushToken(userId: string, projectId?: string) {
     { onConflict: "user_id,token" },
   );
   if (error) throw error;
+
+  await SecureStore.setItemAsync(PUSH_TOKEN_STORAGE_KEY, token);
+  return token;
+}
+
+export async function unregisterPushToken(userId: string) {
+  if (!userId || Platform.OS === "web") return null;
+
+  const token = await SecureStore.getItemAsync(PUSH_TOKEN_STORAGE_KEY);
+  if (!token) return null;
+
+  const { error } = await supabase
+    .from("push_tokens")
+    .delete()
+    .eq("user_id", userId)
+    .eq("token", token);
+  if (error) throw error;
+
+  await SecureStore.deleteItemAsync(PUSH_TOKEN_STORAGE_KEY);
   return token;
 }
