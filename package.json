@@ -8,12 +8,17 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "build:android:production": "eas build --platform android --profile production",
+    "build:ios:preview": "eas build --platform ios --profile preview",
+    "build:ios:production": "eas build --platform ios --profile production"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@supabase/supabase-js": "^2.116.0",
     "expo": "~54.0.0",
+    "expo-constants": "~18.0.14",
     "expo-document-picker": "~14.0.7",
     "expo-file-system": "~19.0.12",
     "expo-linking": "~8.0.8",
