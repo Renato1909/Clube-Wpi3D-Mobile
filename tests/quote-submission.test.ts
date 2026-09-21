@@ -8,7 +8,13 @@ describe("quote submission helpers", () => {
   test("builds a user-scoped sanitized storage path", () => {
     expect(
       buildQuoteFilePath("user-1", 42, "modelo final (v2).stl"),
-    ).toBe("user-1/42/modelo_final__v2_.stl");
+    ).toBe("user-1/42/modelo-final-v2-.stl");
+  });
+
+  test("adds a sequence prefix to duplicate attachment names", () => {
+    expect(
+      buildQuoteFilePath("user-1", 42, "modelo.stl", 2),
+    ).toBe("user-1/42/2-modelo.stl");
   });
 
   test("rolls back storage and database records in order", async () => {
