@@ -12,7 +12,7 @@ export default function Carrinho() {
       {items.length === 0 ? (
         <Text>Seu carrinho está vazio.</Text>
       ) : (
-        items.map((item) => (
+        items.map((item: import("../lib/cart").CartItem) => (
           <View key={item.slug} style={s.row}>
             <View style={{ flex: 1 }}>
               <Text style={s.name}>{item.title}</Text>
