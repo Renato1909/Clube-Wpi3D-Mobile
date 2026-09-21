@@ -5,6 +5,7 @@ import {
   addCartItem,
   cartTotalCents,
   removeCartItem,
+  normalizeCart,
   normalizeQuantity,
 } from "../lib/cart";
 
@@ -28,7 +29,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem(KEY).then((value) => {
       if (!value) return;
       try {
-        setItems(JSON.parse(value) as CartItem[]);
+        setItems(normalizeCart(JSON.parse(value)));
       } catch {
         // Ignore invalid persisted cart data.
       }
