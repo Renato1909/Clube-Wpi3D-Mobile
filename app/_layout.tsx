@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { AuthProvider } from "../context/AuthContext";
 import { CartProvider } from "../context/CartContext";
+import { getNotificationRoute } from "../lib/notification-routing";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -12,10 +14,52 @@ Notifications.setNotificationHandler({
   }),
 });
 
+function NotificationObserver() {
+  useEffect(() => {
+    const handledNotificationIds = new Set<string>();
+
+    function redirect(response: Notifications.NotificationResponse) {
+      if (
+        response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER
+      ) {
+        return;
+      }
+
+      const notificationId = response.notification.request.identifier;
+      if (handledNotificationIds.has(notificationId)) return;
+      handledNotificationIds.add(notificationId);
+
+      const route = getNotificationRoute(
+        response.notification.request.content.data,
+      );
+      if (route) router.push(route);
+    }
+
+    let mounted = true;
+
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!mounted || !response) return;
+      redirect(response);
+      void Notifications.clearLastNotificationResponseAsync();
+    });
+
+    const subscription =
+      Notifications.addNotificationResponseReceivedListener(redirect);
+
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return null;
+}
+
 export default function Layout() {
   return (
     <AuthProvider>
       <CartProvider>
+        <NotificationObserver />
         <Stack>
           <Stack.Screen name="index" options={{ title: "Clube WPI3D" }} />
           <Stack.Screen name="login" options={{ title: "Entrar" }} />
