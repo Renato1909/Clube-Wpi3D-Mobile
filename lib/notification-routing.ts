@@ -16,7 +16,7 @@ export function getNotificationRoute(data: unknown): "/minha-conta" | null {
     (typeof quoteId === "number" &&
       Number.isSafeInteger(quoteId) &&
       quoteId > 0) ||
-    (typeof quoteId === "string" && /^\\d+$/.test(quoteId))
+    (typeof quoteId === "string" && /^\d+$/.test(quoteId))
   ) {
     if (typeof status === "string" && status.length > 0) {
       return "/minha-conta";
