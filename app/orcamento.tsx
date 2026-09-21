@@ -67,9 +67,28 @@ export default function Orcamento() {
       return;
     }
 
-    const descriptionError = validateQuoteDescription(description);
-    if (descriptionError) {
-      Alert.alert("Descrição", descriptionError);
+    const baseDescriptionError = validateQuoteDescription(description);
+    if (baseDescriptionError) {
+      Alert.alert("Descrição", baseDescriptionError);
+      return;
+    }
+
+    const quoteDescription = buildQuoteDescription(description, items);
+    const finalDescriptionError = validateQuoteDescription(quoteDescription);
+    if (finalDescriptionError) {
+      Alert.alert(
+        "Descrição",
+        "A descrição final do orçamento ultrapassa 5000 caracteres. Reduza o texto ou remova alguns itens do carrinho.",
+      );
+      return;
+    }
+
+    const quantity = Math.max(
+      1,
+      items.reduce((total, item) => total + item.quantity, 0),
+    );
+    if (quantity > 10000) {
+      Alert.alert("Quantidade", "A quantidade total do orçamento não pode ultrapassar 10000 unidades.");
       return;
     }
 
@@ -102,12 +121,6 @@ export default function Orcamento() {
       if (!email || email.length > 254) {
         throw new Error("account_email_invalid");
       }
-
-      const quoteDescription = buildQuoteDescription(description, items);
-      const quantity = Math.max(
-        1,
-        items.reduce((total, item) => total + item.quantity, 0),
-      );
 
       const { data, error } = await supabase
         .from("quotes")
