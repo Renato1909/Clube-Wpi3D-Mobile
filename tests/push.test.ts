@@ -4,6 +4,8 @@ jest.mock("expo-notifications", () => ({
   getExpoPushTokenAsync: jest.fn().mockResolvedValue({
     data: "ExponentPushToken[test]",
   }),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  AndroidImportance: { HIGH: "high" },
 }));
 
 const mockUpsert = jest.fn().mockResolvedValue({ error: null });
@@ -15,6 +17,7 @@ jest.mock("../lib/supabase", () => ({
 }));
 
 import {
+  configureAndroidNotificationChannel,
   getExpoPushToken,
   platformName,
   registerPushToken,
@@ -44,5 +47,9 @@ describe("push helpers", () => {
       },
       { onConflict: "user_id,token" },
     );
+  });
+
+  test("configures the Android notification channel without failing on other platforms", async () => {
+    await expect(configureAndroidNotificationChannel()).resolves.toBeUndefined();
   });
 });
