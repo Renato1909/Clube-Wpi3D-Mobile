@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
-import { AuthProvider } from "../context/AuthContext";
+import { AuthProvider, useAuth } from "../context/AuthContext";
 import { CartProvider } from "../context/CartContext";
 import { getNotificationRoute } from "../lib/notification-routing";
 
@@ -15,7 +15,11 @@ Notifications.setNotificationHandler({
 });
 
 function NotificationObserver() {
+  const { loading, user } = useAuth();
+
   useEffect(() => {
+    if (loading || !user) return;
+
     const handledNotificationIds = new Set<string>();
 
     function redirect(response: Notifications.NotificationResponse) {
@@ -50,7 +54,7 @@ function NotificationObserver() {
       mounted = false;
       subscription.remove();
     };
-  }, []);
+  }, [loading, user?.id]);
 
   return null;
 }
