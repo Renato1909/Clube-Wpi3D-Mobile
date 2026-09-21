@@ -144,6 +144,17 @@ export default function MinhaConta() {
             <Text style={s.date}>
               {new Date(quote.created_at).toLocaleDateString("pt-BR")}
             </Text>
+            <Pressable
+              style={s.details}
+              onPress={() =>
+                router.push({
+                  pathname: "/orcamentos/[id]",
+                  params: { id: String(quote.id) },
+                })
+              }
+            >
+              <Text>Ver detalhes</Text>
+            </Pressable>
           </View>
         ))
       )}
@@ -184,4 +195,5 @@ const s = StyleSheet.create({
   link: { padding: 14, alignItems: "center" },
   danger: { padding: 14, alignItems: "center" },
   dangerText: { color: "#b00020", fontWeight: "700" },
+  details: { marginTop: 10, padding: 10, alignItems: "center", backgroundColor: "#f0f2f5", borderRadius: 9 },
 });
