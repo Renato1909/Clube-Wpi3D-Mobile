@@ -32,7 +32,7 @@ describe("cart", () => {
   test("descarta dados persistidos inválidos e normaliza duplicados", () => {
     expect(
       normalizeCart([
-        base,
+        { ...base, quantity: 2 },
         { ...base, quantity: 4 },
         { slug: "../invalid", title: "bad", image: "x", priceCents: 1, quantity: 1 },
         { slug: "missing-fields", quantity: 2 },
