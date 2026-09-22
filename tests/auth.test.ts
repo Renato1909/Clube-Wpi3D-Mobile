@@ -1,4 +1,4 @@
-import type { Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
   getInitialSession,
   signOutCurrentSession,
@@ -20,13 +20,13 @@ function makeSession(): Session {
       aud: "authenticated",
       created_at: "2024-01-01T00:00:00.000Z",
     },
-  };
+  } as Session;
 }
 
 function makeAuth(overrides: Partial<AuthSessionApi> = {}) {
   const session = makeSession();
   let callback:
-    | ((event: "INITIAL_SESSION", nextSession: Session | null) => void)
+    | ((event: AuthChangeEvent, nextSession: Session | null) => void)
     | undefined;
   let unsubscribed = false;
 
@@ -35,18 +35,23 @@ function makeAuth(overrides: Partial<AuthSessionApi> = {}) {
       data: { session },
       error: null,
     })),
-    onAuthStateChange: jest.fn((nextCallback) => {
-      callback = nextCallback as typeof callback;
-      return {
-        data: {
-          subscription: {
-            unsubscribe: () => {
-              unsubscribed = true;
+    onAuthStateChange: jest.fn(
+      (nextCallback: (
+        event: AuthChangeEvent,
+        nextSession: Session | null,
+      ) => void) => {
+        callback = nextCallback;
+        return {
+          data: {
+            subscription: {
+              unsubscribe: () => {
+                unsubscribed = true;
+              },
             },
           },
-        },
-      };
-    }),
+        };
+      },
+    ),
     signOut: jest.fn(async () => ({ error: null })),
     ...overrides,
   };
