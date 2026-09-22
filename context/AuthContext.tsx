@@ -7,6 +7,11 @@ import React, {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import {
+  getInitialSession,
+  signOutCurrentSession,
+  subscribeToAuthSession,
+} from "../lib/auth-session";
 import { registerPushToken, unregisterPushToken } from "../lib/push";
 
 type AuthContextValue = {
@@ -25,23 +30,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        setSession(data.session);
-        setLoading(false);
-      }
-    });
+    const unsubscribe = subscribeToAuthSession(
+      supabase.auth,
+      (nextSession) => {
+        if (mounted) setSession(nextSession);
+      },
+    );
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-    });
+    void getInitialSession(supabase.auth)
+      .then((nextSession) => {
+        if (!mounted) return;
+        setSession(nextSession);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setSession(null);
+        setLoading(false);
+      });
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
@@ -60,8 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await unregisterPushToken(session.user.id).catch(() => undefined);
         }
 
-        const { error } = await supabase.auth.signOut({ scope: "local" });
-        if (error) throw error;
+        await signOutCurrentSession(supabase.auth);
+        setSession(null);
       },
     }),
     [session, loading],
