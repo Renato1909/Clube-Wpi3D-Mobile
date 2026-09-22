@@ -1,9 +1,9 @@
-import type { AuthChangeEvent, AuthError, Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 export type AuthSessionApi = {
   getSession: () => Promise<{
     data: { session: Session | null };
-    error: AuthError | null;
+    error: unknown | null;
   }>;
   onAuthStateChange: (
     callback: (event: AuthChangeEvent, session: Session | null) => void,
@@ -16,7 +16,7 @@ export type AuthSessionApi = {
   };
   signOut: (options?: {
     scope?: "global" | "local" | "others";
-  }) => Promise<{ error: AuthError | null }>;
+  }) => Promise<{ error: unknown | null }>;
 };
 
 export async function getInitialSession(
