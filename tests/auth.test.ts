@@ -5,6 +5,27 @@ import {
   subscribeToAuthSession,
   type AuthSessionApi,
 } from "../lib/auth-session";
+import {
+  AUTH_PASSWORD_MIN_LENGTH,
+  normalizeAuthCode,
+  resolveAuthNext,
+} from "../lib/auth";
+
+test("auth callback only accepts app-local next paths", () => {
+  expect(resolveAuthNext("/redefinir-senha")).toBe("/redefinir-senha");
+  expect(resolveAuthNext("https://example.com")).toBe("/minha-conta");
+  expect(resolveAuthNext(undefined)).toBe("/minha-conta");
+});
+
+test("auth code is normalized", () => {
+  expect(normalizeAuthCode("abc")).toBe("abc");
+  expect(normalizeAuthCode("")).toBeNull();
+  expect(normalizeAuthCode(undefined)).toBeNull();
+});
+
+test("password policy stays aligned across auth screens", () => {
+  expect(AUTH_PASSWORD_MIN_LENGTH).toBe(8);
+});
 
 function makeSession(): Session {
   return {
@@ -71,6 +92,17 @@ test("initial session contract returns the persisted session", async () => {
 
   await expect(getInitialSession(auth)).resolves.toBe(session);
   expect(auth.getSession).toHaveBeenCalledTimes(1);
+});
+
+test("initial session contract allows an unauthenticated state", async () => {
+  const { auth } = makeAuth({
+    getSession: jest.fn(async () => ({
+      data: { session: null },
+      error: null,
+    })),
+  });
+
+  await expect(getInitialSession(auth)).resolves.toBeNull();
 });
 
 test("initial session contract propagates auth storage errors", async () => {
