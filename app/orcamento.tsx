@@ -1,12 +1,16 @@
 import { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { router } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -22,7 +26,7 @@ const MAX_FILES = 5;
 const MAX_BYTES = 20 * 1024 * 1024;
 
 export default function Orcamento() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { items, clear } = useCart();
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<DocumentPicker.DocumentPickerAsset[]>([]);
@@ -63,6 +67,7 @@ export default function Orcamento() {
       Alert.alert(
         "Login necessário",
         "Entre na sua conta para solicitar um orçamento.",
+        [{ text: "Cancelar", style: "cancel" }, { text: "Entrar", onPress: () => router.push("/login") }],
       );
       return;
     }
@@ -202,6 +207,7 @@ export default function Orcamento() {
         Alert.alert(
           "Perfil incompleto",
           "Preencha seu nome e telefone em Minha conta antes de solicitar um orçamento.",
+          [{ text: "Minha conta", onPress: () => router.push("/minha-conta") }],
         );
       } else if (
         error instanceof Error &&
@@ -210,6 +216,7 @@ export default function Orcamento() {
         Alert.alert(
           "Telefone inválido",
           "Atualize seu telefone em Minha conta antes de enviar o orçamento.",
+          [{ text: "Minha conta", onPress: () => router.push("/minha-conta") }],
         );
       } else if (
         error instanceof Error &&
@@ -265,7 +272,8 @@ export default function Orcamento() {
   }
 
   return (
-    <View style={s.page}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
       <Text style={s.title}>Solicitar orçamento</Text>
 
       {items.length > 0 && (
@@ -294,17 +302,18 @@ export default function Orcamento() {
         <Text>Selecionar arquivos</Text>
       </Pressable>
 
-      <Pressable disabled={sending} style={s.button} onPress={submit}>
+      <Pressable disabled={sending || authLoading} style={s.button} onPress={submit}>
         <Text style={s.buttonText}>
           {sending ? "Enviando…" : "Enviar orçamento"}
         </Text>
       </Pressable>
-    </View>
+    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, padding: 20, backgroundColor: "#f4f6f8" },
+  page: { flexGrow: 1, padding: 20, backgroundColor: "#f4f6f8" },
   title: { fontSize: 28, fontWeight: "700", marginBottom: 16 },
   section: { fontSize: 17, fontWeight: "700", marginBottom: 6 },
   cartBox: {
@@ -339,3 +348,4 @@ const s = StyleSheet.create({
   },
   buttonText: { color: "white", fontWeight: "700" },
 });
+

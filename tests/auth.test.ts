@@ -15,6 +15,8 @@ test("auth callback only accepts app-local next paths", () => {
   expect(resolveAuthNext("/redefinir-senha")).toBe("/redefinir-senha");
   expect(resolveAuthNext("https://example.com")).toBe("/minha-conta");
   expect(resolveAuthNext(undefined)).toBe("/minha-conta");
+  expect(resolveAuthNext("//example.com")).toBe("/minha-conta");
+  expect(resolveAuthNext("/loja")).toBe("/minha-conta");
 });
 
 test("auth code is normalized", () => {
@@ -148,3 +150,4 @@ test("logout contract propagates auth errors", async () => {
 
   await expect(signOutCurrentSession(auth)).rejects.toBe(error);
 });
+

@@ -8,7 +8,6 @@ export type Product = {
   image: string;
   priceCents: number | null;
 };
-
 type ProductRow = Omit<Product, "image" | "priceCents"> & {
   image_path: string;
   price_cents: number | null;
@@ -16,108 +15,65 @@ type ProductRow = Omit<Product, "image" | "priceCents"> & {
   sort_order?: number;
 };
 
-const fallbackProducts: Product[] = [
-  {
-    slug: "peca-religiosa",
-    title: "Peça religiosa",
-    category: "Arte religiosa",
-    image:
-      "https://raw.githubusercontent.com/Renato1909/clube-wpi3d/main/public/produtos/produto-01.jpeg",
-    description: "Peça de arte religiosa personalizada.",
-    priceCents: null,
-  },
-  {
-    slug: "peca-decorativa",
-    title: "Peça decorativa",
-    category: "Decoração",
-    image:
-      "https://raw.githubusercontent.com/Renato1909/clube-wpi3d/main/public/produtos/produto-02.jpeg",
-    description: "Peça decorativa produzida em impressão 3D.",
-    priceCents: null,
-  },
-  {
-    slug: "estatua-personalizada",
-    title: "Estátua personalizada",
-    category: "Decoração",
-    image:
-      "https://raw.githubusercontent.com/Renato1909/clube-wpi3d/main/public/produtos/produto-03.jpeg",
-    description: "Estátua personalizada produzida em impressão 3D.",
-    priceCents: null,
-  },
-];
+export function resolveProductImage(path: string) {
+  if (/^https:\/\//i.test(path)) return path;
+  if (/^http:\/\//i.test(path) || path.startsWith("//")) {
+    throw new Error("A imagem do produto precisa usar HTTPS.");
+  }
 
-function imageUrl(path: string) {
-  if (/^https?:\/\//.test(path)) return path;
+  // Older catalog entries refer to files hosted by the web storefront.
+  if (path.startsWith("/produtos/")) {
+    const site = process.env.EXPO_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+    if (!site || !/^https:\/\//i.test(site)) {
+      throw new Error("Configure EXPO_PUBLIC_SITE_URL ou migre as fotos para product-images.");
+    }
+    return site + path;
+  }
 
-  const base = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  return base
-    ? `${base}/storage/v1/object/public/products/${path.replace(/^\/+/, "")}`
-    : path;
+  const base = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
+  if (!base) throw new Error("Configure EXPO_PUBLIC_SUPABASE_URL.");
+  const objectPath = path.replace(/^\/+/, "");
+  if (!objectPath || objectPath.split("/").some((part) => part === ".." || part === ".")) {
+    throw new Error("Caminho de imagem inválido.");
+  }
+  return base + "/storage/v1/object/public/product-images/" +
+    objectPath.split("/").map(encodeURIComponent).join("/");
 }
 
 function mapRow(row: ProductRow): Product {
   return {
-    slug: row.slug,
-    title: row.title,
-    category: row.category,
-    description: row.description,
-    image: imageUrl(row.image_path),
+    slug: row.slug, title: row.title, category: row.category,
+    description: row.description, image: resolveProductImage(row.image_path),
     priceCents: row.price_cents,
   };
 }
 
 export async function getProducts(): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      "slug,title,category,description,image_path,price_cents,active,sort_order",
-    )
-    .eq("active", true)
-    .order("sort_order")
-    .order("title");
-
-  return error || !data || data.length === 0 ? fallbackProducts : data.map(mapRow);
+  const { data, error } = await supabase.from("products")
+    .select("slug,title,category,description,image_path,price_cents,active,sort_order")
+    .eq("active", true).order("sort_order").order("title");
+  if (error) throw error;
+  return (data ?? []).map(mapRow);
 }
 
-export async function getProductBySlug(
-  slug: string,
-): Promise<Product | undefined> {
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      "slug,title,category,description,image_path,price_cents,active,sort_order",
-    )
-    .eq("active", true)
-    .eq("slug", slug)
-    .maybeSingle();
-
-  return !error && data
-    ? mapRow(data)
-    : fallbackProducts.find((product) => product.slug === slug);
+export async function getProductBySlug(slug: string): Promise<Product | undefined> {
+  const { data, error } = await supabase.from("products")
+    .select("slug,title,category,description,image_path,price_cents,active,sort_order")
+    .eq("active", true).eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  return data ? mapRow(data) : undefined;
 }
 
-export function filterProducts(
-  products: Product[],
-  query: string,
-  category: string,
-) {
+export function filterProducts(products: Product[], query: string, category: string) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
-
-  return products.filter(
-    (product) =>
-      (!normalizedQuery ||
-        [product.title, product.category, product.description].some((value) =>
-          value.toLocaleLowerCase().includes(normalizedQuery),
-        )) &&
-      (!category || product.category === category),
-  );
+  return products.filter((product) =>
+    (!normalizedQuery || [product.title, product.category, product.description]
+      .some((value) => value.toLocaleLowerCase().includes(normalizedQuery))) &&
+    (!category || product.category === category));
 }
 
 export function formatPrice(cents: number | null) {
-  return cents === null
-    ? "Preço a definir"
-    : (cents / 100).toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      });
+  return cents === null ? "Preço a definir" :
+    (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+

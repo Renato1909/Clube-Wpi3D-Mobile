@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       signOut: async () => {
         if (session?.user?.id) {
-          await unregisterPushToken(session.user.id).catch(() => undefined);
+          await unregisterPushToken(session.user.id);
         }
 
         await signOutCurrentSession(supabase.auth);
@@ -85,3 +85,4 @@ export function useAuth() {
   if (!value) throw new Error("useAuth fora do AuthProvider");
   return value;
 }
+

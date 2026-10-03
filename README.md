@@ -19,6 +19,7 @@ Copie `.env.example` para `.env` e configure:
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_SITE_URL`: URL HTTPS pública do site, obrigatória somente enquanto o catálogo usar imagens legadas em `/produtos/...`.
 
 `EXPO_PUBLIC_EAS_PROJECT_ID` é opcional depois que o projeto EAS estiver vinculado. O app também consegue obter o `projectId` da configuração EAS embutida no build.
 
@@ -27,7 +28,7 @@ Nunca coloque uma chave `service_role` ou `sb_secret_...` no aplicativo.
 ## Executar
 
 ```bash
-npm install
+npm ci
 npx expo start
 ```
 
@@ -36,7 +37,7 @@ npx expo start
 Inicialize/vincule o projeto EAS uma única vez:
 
 ```bash
-npx eas init
+npx eas-cli@latest init
 ```
 
 Depois gere o APK de teste interno:
@@ -80,3 +81,22 @@ A infraestrutura do backend está no repositório web, em `supabase/functions` e
 ## CI
 
 A verificação automática executa TypeScript e Jest no GitHub Actions.
+
+## Catálogo e imagens
+
+O catálogo agora mostra erro de conexão ou estado vazio, sem substituir produtos reais por itens de demonstração.
+
+Use URLs HTTPS públicas em `products.image_path` ou caminhos de objetos no bucket público `product-images`, por exemplo `pecas/produto-01.jpeg`. Para entradas legadas em `/produtos/...`, configure a URL pública do site em `EXPO_PUBLIC_SITE_URL`. Imagens de um repositório GitHub privado não servem como CDN pública.
+
+## Verificação antes do APK
+
+```sh
+npm run typecheck
+npm test
+npx expo-doctor
+```
+
+Os scripts de build exigem o EAS CLI disponível como `eas`. Como alternativa sem instalação global, execute `npx eas-cli@latest build --platform android --profile preview`.
+
+O backend correspondente está no repositório web: aplicar a proteção de UPDATE de orçamento e publicar a função de webhook corrigida antes de validar status e notificações em produção.
+
