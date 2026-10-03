@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { hasBundledProductImage } from "./product-images";
 
 export type Product = {
   slug: string;
@@ -24,6 +25,7 @@ export function resolveProductImage(path: string) {
   // Older catalog entries refer to files hosted by the web storefront.
   if (path.startsWith("/produtos/")) {
     const site = process.env.EXPO_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+    if (!site && hasBundledProductImage(path)) return path;
     if (!site || !/^https:\/\//i.test(site)) {
       throw new Error("Configure EXPO_PUBLIC_SITE_URL ou migre as fotos para product-images.");
     }

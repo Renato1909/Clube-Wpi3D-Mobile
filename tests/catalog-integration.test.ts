@@ -32,7 +32,8 @@ test("reads real images from product-images and encodes object paths", async () 
 
 test("preserves HTTPS URLs and resolves legacy storefront paths only with configuration", () => {
   expect(resolveProductImage("https://cdn.example.com/image.jpeg")).toBe("https://cdn.example.com/image.jpeg");
-  expect(() => resolveProductImage("/produtos/produto-01.jpeg")).toThrow("EXPO_PUBLIC_SITE_URL");
+  expect(resolveProductImage("/produtos/produto-01.jpeg")).toBe("/produtos/produto-01.jpeg");
+  expect(() => resolveProductImage("/produtos/other.jpeg")).toThrow("EXPO_PUBLIC_SITE_URL");
   process.env.EXPO_PUBLIC_SITE_URL = "https://store.example.com/";
   expect(resolveProductImage("/produtos/produto-01.jpeg")).toBe("https://store.example.com/produtos/produto-01.jpeg");
   expect(() => resolveProductImage("//other.example.com/image")).toThrow();

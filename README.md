@@ -19,7 +19,7 @@ Copie `.env.example` para `.env` e configure:
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- `EXPO_PUBLIC_SITE_URL`: URL HTTPS pública do site, obrigatória somente enquanto o catálogo usar imagens legadas em `/produtos/...`.
+- `EXPO_PUBLIC_SITE_URL`: URL HTTPS pública do site para imagens legadas em `/produtos/...`; opcional para as três fotos originais incluídas no app.
 
 `EXPO_PUBLIC_EAS_PROJECT_ID` é opcional depois que o projeto EAS estiver vinculado. O app também consegue obter o `projectId` da configuração EAS embutida no build.
 
@@ -86,7 +86,9 @@ A verificação automática executa TypeScript e Jest no GitHub Actions.
 
 O catálogo agora mostra erro de conexão ou estado vazio, sem substituir produtos reais por itens de demonstração.
 
-Use URLs HTTPS públicas em `products.image_path` ou caminhos de objetos no bucket público `product-images`, por exemplo `pecas/produto-01.jpeg`. Para entradas legadas em `/produtos/...`, configure a URL pública do site em `EXPO_PUBLIC_SITE_URL`. Imagens de um repositório GitHub privado não servem como CDN pública.
+Use URLs HTTPS públicas em `products.image_path` ou caminhos de objetos no bucket público `product-images`, por exemplo `pecas/produto-01.jpeg`. As três fotos originais do site estão incluídas no app para os caminhos `/produtos/produto-01.jpeg`, `produto-02.jpeg` e `produto-03.jpeg`, sem depender do GitHub privado. Isso não cria produtos fictícios: o catálogo continua vindo do banco.
+
+Para outras entradas legadas em `/produtos/...`, configure a URL pública do site em `EXPO_PUBLIC_SITE_URL`. Quando configurada, essa URL também substitui as fotos incluídas. Imagens de um repositório GitHub privado não servem como CDN pública.
 
 ## Verificação antes do APK
 
