@@ -30,14 +30,17 @@ type Quote = {
 };
 
 export default function MinhaConta() {
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       router.replace("/login");
       return;
@@ -48,8 +51,9 @@ export default function MinhaConta() {
 
     async function load() {
       setLoading(true);
+      setLoadError(false);
 
-      const [{ data: profile }, { data: quoteData }] = await Promise.all([
+      const [{ data: profile, error: profileError }, { data: quoteData, error: quotesError }] = await Promise.all([
         getProfile(supabase, currentUser.id),
         supabase
           .from("quotes")
@@ -60,6 +64,7 @@ export default function MinhaConta() {
       ]);
 
       if (!active) return;
+      if (profileError || quotesError) throw new Error("account_load_failed");
 
       setName(
         profile?.full_name ??
@@ -77,11 +82,15 @@ export default function MinhaConta() {
       setLoading(false);
     }
 
-    void load();
+    void load().catch(() => {
+      if (!active) return;
+      setLoadError(true);
+      setLoading(false);
+    });
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [authLoading, user, retry]);
 
   async function save() {
     if (!user || name.trim().length < 2) {
@@ -98,11 +107,22 @@ export default function MinhaConta() {
   }
 
   async function logout() {
-    await signOut();
-    router.replace("/");
+    try {
+      await signOut();
+      router.replace("/");
+    } catch {
+      Alert.alert("Não foi possível sair", "Verifique sua conexão e tente novamente.");
+    }
   }
 
+  if (authLoading) return <View style={s.page}><Text>Restaurando sua sessão…</Text></View>;
   if (!user) return null;
+  if (loadError) return <View style={s.page}>
+    <Text>Não foi possível carregar sua conta. Verifique sua conexão.</Text>
+    <Pressable style={s.button} onPress={() => setRetry((value) => value + 1)}>
+      <Text style={s.buttonText}>Tentar novamente</Text>
+    </Pressable>
+  </View>;
 
   return (
     <ScrollView contentContainerStyle={s.page}>
@@ -197,3 +217,4 @@ const s = StyleSheet.create({
   dangerText: { color: "#b00020", fontWeight: "700" },
   details: { marginTop: 10, padding: 10, alignItems: "center", backgroundColor: "#f0f2f5", borderRadius: 9 },
 });
+

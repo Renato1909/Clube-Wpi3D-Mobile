@@ -24,21 +24,27 @@ const C = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    let active = true;
     AsyncStorage.getItem(KEY).then((value) => {
+      if (!active) return;
       if (!value) return;
       try {
         setItems(normalizeCart(JSON.parse(value)));
       } catch {
         // Ignore invalid persisted cart data.
       }
+    }).catch(() => undefined).finally(() => {
+      if (active) setHydrated(true);
     });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem(KEY, JSON.stringify(items)).catch(() => undefined);
-  }, [items]);
+    if (hydrated) AsyncStorage.setItem(KEY, JSON.stringify(items)).catch(() => undefined);
+  }, [items, hydrated]);
 
   const value = useMemo(
     () => ({
@@ -69,3 +75,4 @@ export function useCart() {
   if (!value) throw new Error("useCart fora do CartProvider");
   return value;
 }
+

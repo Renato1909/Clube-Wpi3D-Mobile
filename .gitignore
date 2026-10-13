@@ -1,7 +1,9 @@
 node_modules/
 .expo/
 dist/
+dist-smoke/
 .env
 .env.*
 !.env.example
+coverage/
 *.log
